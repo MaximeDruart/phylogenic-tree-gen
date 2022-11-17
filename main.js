@@ -4,19 +4,12 @@ import { uniqueNamesGenerator, animals, countries, colors, names } from "unique-
 
 const dictionaries = [animals, countries, colors, names]
 
-const masterBranch = new patristic.Branch({ id: "master" })
-let tree = new TidyTree(masterBranch.toNewick(), {
-  parent: "body",
-  layout: "circular",
-  mode: "square",
-  leafLabels: true,
-  branchLabels: true,
-})
-
+let masterBranch, tree
 const averageMutationAmount = 2
-const deathProbability = 0.6
-const maxGenerations = 8
+const deathProbability = 0.55
+const maxGenerations = 10
 const sourceName = "Triticum"
+const finalSurvivingAverage = 5
 
 const createChildForBranchId = (branchId, depth) => {
   const matchBranch = masterBranch.getDescendant(branchId)
@@ -49,16 +42,58 @@ const getChildrensIdForDepth = (depth) => {
   return branchIds
 }
 
+const setOnlyEndLabels = () => {
+  // tree.eachLeafLabel((s) => {
+  //   const title = s.innerHTML
+  //   console.log(s.innerHTML)
+  //   const branch = masterBranch.getDescendant(title)
+  //   const depth = branch.data.depth || branch.depth
+  //   if (depth === maxGenerations && !branch.data.isDead) {
+  //     s.style.fill = "white"
+  //     s.style.opacity = 1
+  //     console.log("set end", title)
+  //   }
+  // })
+}
+
 const startGeneration = () => {
+  masterBranch = new patristic.Branch({ id: "master" })
+  tree = new TidyTree(masterBranch.toNewick(), {
+    parent: "body",
+    layout: "circular",
+    mode: "square",
+    leafLabels: true,
+    branchLabels: true,
+    ruler: false,
+  })
+
+  tree.eachLeafLabel((s) => {
+    s.style.fill = "white"
+    s.style.opacity = 0
+  })
+  tree.eachBranchNode((s) => {
+    s.style.fill = "white"
+  })
+
   let currentDepth = 0
   let generationInterval = setInterval(() => {
-    console.log(masterBranch)
     const idsToAppendTo = getChildrensIdForDepth(currentDepth)
-    console.log(idsToAppendTo)
+
+    if (!idsToAppendTo.length) {
+      clearInterval(generationInterval)
+      // startGeneration()
+    }
     idsToAppendTo.forEach((id) => createChildForBranchId(id, currentDepth + 1))
+
     currentDepth++
+
     tree.setTree(masterBranch.toNewick())
-    if (currentDepth > maxGenerations) clearInterval(generationInterval)
+    tree.recenter()
+    if (currentDepth >= maxGenerations) {
+      console.log("stop !!!")
+      clearInterval(generationInterval)
+      setOnlyEndLabels()
+    }
 
     tree.eachLeafNode((s) => {
       const title = s.getAttribute("title")
@@ -67,7 +102,7 @@ const startGeneration = () => {
         s.style.fill = "red"
       }
     })
-  }, 1000)
+  }, 1400)
 }
 
 startGeneration()
